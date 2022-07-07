@@ -43,7 +43,7 @@ class Layer:
 class LorentzDrude:
     """Metall layer with Lorentz-Drude model of material permittivity."""
 
-    def __init__(self, wp, wt, name=None):
+    def __init__(self, wp, wt, w0=0, eps_inf=1, amplitude=1, name=None):
         """Create new metall with complex refractive index.
 
         Parameters
@@ -55,14 +55,38 @@ class LorentzDrude:
         name: string
             Material name
         """
-        self.name = name
-        self.refractivity = lambda lam:\
-            SM.sqrt(1 - wp**2/((2*np.pi*3e8/lam)**2 + 1j*wt*(2*np.pi*3e8/lam)))
+        # Get shape and oscilators count
+        if (len(np.array(wp).shape) == 0) or (len(np.array(wp)) == 1):
+            # one oscilator
+            # save to use
+            self.wp = wp
+            self.wt = wt
+            self.w0 = w0
+            self.name = name
+            self.eps_inf = eps_inf
+            self.amplitude = amplitude
+            self.CRI = lambda lam:\
+                SM.sqrt(self.eps_inf - self.amplitude*self.wp**2/ \
+                        ((2*np.pi*3e8/lam)**2 + 1j*self.wt*(2*np.pi*3e8/lam) - self.w0**2))
+        else: 
+            # many oscilators
+            if w0 == 0: w0 = [0] * len(wp)
+            if amplitude == 1: amplitude = [1] * len(wp)
+            self.wp = wp
+            self.wt = wt
+            self.w0 = w0
+            self.name = name
+            self.eps_inf = eps_inf
+            self.amplitude = amplitude
+            if len(self.wp) != len(self.wt) and len(self.wp) != len(self.w0):
+                print('ERROR! wp, wt and w0 arrays must have same dimensions!')
+                return
+            self.CRI = lambda lam: SM.sqrt(self.eps_inf - sum([(self.amplitude[i]*self.wp[i]**2/ \
+                ((2*np.pi*3e8/lam)**2 + 1j*self.wt[i]*(2*np.pi*3e8/lam) - self.w0[i]**2) \
+                    ) for i in range(0, len(self.wp))]))
 
-    def CRI(self, wavelength):
-        return self.refractivity(wavelength)
-    
-    def show_CRI(self, lambda_range):
+
+    def show_CRI(self, lambda_range, dpi=None):
         """Plot complex refractive index.
 
         Parameters
@@ -73,25 +97,62 @@ class LorentzDrude:
         nnn = []
         kkk = []
         for lam in lambda_range:
-            ref = self.refractivity(lam)
+            ref = self.CRI(lam)
             nnn.append(np.real(ref))
             kkk.append(np.imag(ref))
+
+        print(nnn)
+        print(kkk)
             
-        fig, ax = plt.subplots()
+        if dpi is None:
+            fig, ax = plt.subplots()
+        else:
+            fig, ax = plt.subplots(dpi=dpi)
         ax.grid()
         rang = np.around(lambda_range*1e6, 3)
         ax.plot(rang, nnn, label='n')
         ax.plot(rang, kkk, label='k')
         if self.name==None:
-            plt.title(f'Material omplex refractive index')
+            plt.title(f'Material complex refractive index')
         else:
             plt.title(f'Complex refractive index of {self.name}')
         plt.legend(loc='best')
         plt.ylabel('Value')
         plt.xlabel('Wavelength, µm')
         plt.show()
-    
-    
+
+
+    def show_CRI_permittivity(self, lambda_range, dpi=None):
+        """Plot complex refractive index.
+
+        Parameters
+        ----------
+        lambda_range : array
+            Range. The default is None - all data.
+        """
+        epsre = []
+        epsim = []
+        for lam in lambda_range:
+            ref = self.CRI(lam)**2
+            epsre.append(np.real(ref))
+            epsim.append(np.imag(ref))
+            
+        if dpi is None:
+            fig, ax = plt.subplots()
+        else:
+            fig, ax = plt.subplots(dpi=dpi)
+        ax.grid()
+        rang = np.around(1/lambda_range*1e6, 3)
+        ax.plot(rang, epsre, label='Eps\'')
+        ax.plot(rang, epsim, label='Eps\"')
+        if self.name==None:
+            plt.title(f'Material complex permittivity')
+        else:
+            plt.title(f'Complex permittivity of {self.name}')
+        plt.legend(loc='best')
+        plt.ylabel('Value')
+        plt.xlabel('w, 1/sm')
+        plt.show()
 
 class MaterialDispersion:
     """Metall layer with complex refractive index."""
