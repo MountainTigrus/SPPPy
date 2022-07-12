@@ -56,6 +56,8 @@ class LorentzDrude:
             Material name
         """
         # Get shape and oscilators count
+        pi_c_double = 2*np.pi*3e8
+        self.eps_inf = eps_inf
         if (len(np.array(wp).shape) == 0) or (len(np.array(wp)) == 1):
             # one oscilator
             # save to use
@@ -63,11 +65,11 @@ class LorentzDrude:
             self.wt = wt
             self.w0 = w0
             self.name = name
-            self.eps_inf = eps_inf
             self.amplitude = amplitude
+            pi_c_double = 2*np.pi*3e8
             self.CRI = lambda lam:\
                 SM.sqrt(self.eps_inf - self.amplitude*self.wp**2/ \
-                        ((2*np.pi*3e8/lam)**2 + 1j*self.wt*(2*np.pi*3e8/lam) - self.w0**2))
+                        ((pi_c_double/lam)**2 + 1j*self.wt*(pi_c_double/lam) - self.w0**2))
         else: 
             # many oscilators
             if w0 == 0: w0 = [0] * len(wp)
@@ -76,13 +78,12 @@ class LorentzDrude:
             self.wt = wt
             self.w0 = w0
             self.name = name
-            self.eps_inf = eps_inf
             self.amplitude = amplitude
             if len(self.wp) != len(self.wt) and len(self.wp) != len(self.w0):
                 print('ERROR! wp, wt and w0 arrays must have same dimensions!')
                 return
             self.CRI = lambda lam: SM.sqrt(self.eps_inf - sum([(self.amplitude[i]*self.wp[i]**2/ \
-                ((2*np.pi*3e8/lam)**2 + 1j*self.wt[i]*(2*np.pi*3e8/lam) - self.w0[i]**2) \
+                ((pi_c_double/lam)**2 + 1j*self.wt[i]*(pi_c_double/lam) - self.w0[i]**2) \
                     ) for i in range(0, len(self.wp))]))
 
 
@@ -396,7 +397,9 @@ class MaterialDispersion:
 
 class Anisotropic:
     """Anisotropic dielectric layer."""
-
+    main_angle = 0
+    n0 = 1
+    n1 = 1
     def __init__(self, n0, n1, main_angle):
         """Anisotropic layer.
 
@@ -423,6 +426,17 @@ class Anisotropic:
                           beta**2 * self.ny_2 / self.nz_2)
         self.K = SM.sqrt(1 - self.nyz**2 / (self.ny_2 * self.nz_2))
         self.deltaK = lambda beta: (beta * self.nyz) / self.nz_2
+
+    def __setattr__(self, name, val):
+        """Sync wavelength and k0."""
+        self.__dict__[name] = val
+        if name == "n0" or name == "n1" or name == "main_angle":
+            if name == "main_angle":
+                self.__dict__[name] = np.pi * val / 180
+            self.ny_2 = (self.n0 * np.cos(self.main_angle))**2 + (self.n1 * np.sin(self.main_angle))**2
+            self.nz_2 = (self.n0 * np.sin(self.main_angle))**2 + (self.n1 * np.cos(self.main_angle))**2
+            self.nyz = (self.n0**2 - self.n1**2) * np.sin(self.main_angle) * np.cos(self.main_angle)
+
 
     def kz_plus(self, beta, k0):
         """Kz+."""
