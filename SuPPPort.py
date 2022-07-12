@@ -397,10 +397,10 @@ class MaterialDispersion:
 
 class Anisotropic:
     """Anisotropic dielectric layer."""
-    main_angle = 0
+    main_angle_rad = 0
     n0 = 1
     n1 = 1
-    def __init__(self, n0, n1, main_angle):
+    def __init__(self, n0=None, n1=None, anisotropic_angle=None):
         """Anisotropic layer.
 
         Parameters
@@ -409,17 +409,16 @@ class Anisotropic:
             ordinary reflection_data coeficient.
         n1 : float
             extraordinary reflection_data coeficient.
-        main_angle : float
+        main_angle_rad : float
             Principle axis angle in degree
         """
-        self.n0 = n0
-        self.n1 = n1
-        self.main_angle = np.pi * main_angle / 180
-
-        # Equivalent rafractive indices
-        self.ny_2 = (n0 * np.cos(self.main_angle))**2 + (n1 * np.sin(self.main_angle))**2
-        self.nz_2 = (n0 * np.sin(self.main_angle))**2 + (n1 * np.cos(self.main_angle))**2
-        self.nyz = (n0**2 - n1**2) * np.sin(self.main_angle) * np.cos(self.main_angle)
+        if n0 is not None:
+            self.n0 = n0
+        if n1 is not None:
+            self.n1 = n1
+        if anisotropic_angle is not None:
+            self.main_angle_rad = np.pi * anisotropic_angle / 180
+        else: self.main_angle_rad = 0 # To calculate rafractive indices(setter)
 
         # wave vector blocks
         self.kz_dot = lambda beta, k0: SM.sqrt(k0**2 * self.ny_2 -
@@ -430,12 +429,16 @@ class Anisotropic:
     def __setattr__(self, name, val):
         """Sync wavelength and k0."""
         self.__dict__[name] = val
-        if name == "n0" or name == "n1" or name == "main_angle":
-            if name == "main_angle":
-                self.__dict__[name] = np.pi * val / 180
-            self.ny_2 = (self.n0 * np.cos(self.main_angle))**2 + (self.n1 * np.sin(self.main_angle))**2
-            self.nz_2 = (self.n0 * np.sin(self.main_angle))**2 + (self.n1 * np.cos(self.main_angle))**2
-            self.nyz = (self.n0**2 - self.n1**2) * np.sin(self.main_angle) * np.cos(self.main_angle)
+        if name == "n0" or name == "n1" or name == "anisotropic_angle":
+            if name == "anisotropic_angle":
+                self.__dict__['main_angle_rad'] = np.pi * val / 180
+            # Equivalent rafractive indices
+            self.ny_2 = (self.n0 * np.cos(self.main_angle_rad))**2 \
+                + (self.n1 * np.sin(self.main_angle_rad))**2
+            self.nz_2 = (self.n0 * np.sin(self.main_angle_rad))**2 \
+                + (self.n1 * np.cos(self.main_angle_rad))**2
+            self.nyz = (self.n0**2 - self.n1**2) * np.sin(self.main_angle_rad)\
+                * np.cos(self.main_angle_rad)
 
 
     def kz_plus(self, beta, k0):
@@ -464,7 +467,7 @@ class Anisotropic:
 
     def __repr__(self):
         """Magic representation."""
-        return "anisotropic, n=(" + str(self.n0) + ", " + str(self.n1) + "), angle=" + str(180*self.main_angle/np.pi)
+        return "anisotropic, n=(" + str(self.n0) + ", " + str(self.n1) + "), angle=" + str(180*self.main_angle_rad/np.pi)
 
 
 # ------------------------------------------------------------------------

@@ -631,10 +631,12 @@ class ExperimentSPR:
             ax.set_ylabel('R')
             plt.show()
 
+    curve_angles_range = [50,70]
+
     def pointSPR(self):
         theta_min = minimize_scalar(self.R_deg, bounds=self.curve_angles_range, method='Bounded')
         Rw_min = np.abs(self.R_deg(np.real(theta_min.x)))**2
-        return np.real(theta_min.x), Rw_min     
+        return Rw_min, np.real(theta_min.x)
         
         
         
