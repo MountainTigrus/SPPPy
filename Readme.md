@@ -247,11 +247,11 @@ Unit.add(Layer(Anisotropic(n0=1.2, n1=1.1, anisotropic_angle=10), 1e-9))
 
 ## 3. Материал модели Друде-Лоренца
 Класс **LorentzDrude** создан для добавления вещества, комплексный показатель преломления которого вычисляется через формулу Друде-Лоренца:
-
+$$
 \begin{equation}
 \hat{n}(\omega) = \tilde\varepsilon(\omega)^2 = \left( \varepsilon_\infty + \sum_{j}\frac{f_i \omega_{pj}^2}{\omega_{0j}^2 - \omega^2 - i\omega_{tj}\omega} \right)^2
 \end{equation}
-
+$$
 Инициализация класса включает в себя следующие параметры:
 ```python
 material = LorentzDrude(wp, wt, w0=0, amplitude=1, eps_inf=1, name=None)
