@@ -400,6 +400,9 @@ class Anisotropic:
     main_angle_rad = 0
     n0 = 1
     n1 = 1
+    ny_2 = 0
+    nz_2 = 0
+    nyz = 0
     def __init__(self, n0=None, n1=None, anisotropic_angle=None):
         """Anisotropic layer.
 
@@ -420,11 +423,16 @@ class Anisotropic:
             self.main_angle_rad = np.pi * anisotropic_angle / 180
         else: self.main_angle_rad = 0 # To calculate rafractive indices(setter)
 
-        # wave vector blocks
-        self.kz_dot = lambda beta, k0: SM.sqrt(k0**2 * self.ny_2 -
-                          beta**2 * self.ny_2 / self.nz_2)
-        self.K = SM.sqrt(1 - self.nyz**2 / (self.ny_2 * self.nz_2))
-        self.deltaK = lambda beta: (beta * self.nyz) / self.nz_2
+    def kz_dot(self, beta, k0):
+        return SM.sqrt(k0**2 * self.ny_2 - beta**2 * self.ny_2 / self.nz_2)
+
+    def K(self):
+        return  SM.sqrt(1 - self.nyz**2 / (self.ny_2 * self.nz_2))
+    
+    def deltaK(self, beta):
+        return (beta * self.nyz) / self.nz_2
+
+
 
     def __setattr__(self, name, val):
         """Sync wavelength and k0."""
@@ -443,11 +451,11 @@ class Anisotropic:
 
     def kz_plus(self, beta, k0):
         """Kz+."""
-        return self.kz_dot(beta, k0) * self.K + self.deltaK(beta)
+        return self.kz_dot(beta, k0) * self.K() + self.deltaK(beta)
 
     def kz_minus(self, beta, k0):
         """Kz-."""
-        return self.kz_dot(beta, k0) * self.K - self.deltaK(beta)
+        return self.kz_dot(beta, k0) * self.K() - self.deltaK(beta)
 
     def r_in(self, n_prev, beta, k0):
         """r01."""
@@ -463,7 +471,7 @@ class Anisotropic:
 
     def p_div_q(self, beta, k0):
         """p/q for rij."""
-        return SM.sqrt(self.ny_2 * self.nz_2) * self.K / SM.sqrt(self.nz_2 - (beta/k0)**2)
+        return SM.sqrt(self.ny_2 * self.nz_2) * self.K() / SM.sqrt(self.nz_2 - (beta/k0)**2)
 
     def __repr__(self):
         """Magic representation."""

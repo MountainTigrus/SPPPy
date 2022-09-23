@@ -66,12 +66,12 @@ class ExperimentSPR:
 
     def save_scheme(self):
         """Conserving scheme parametrs."""
-        self.wl_asylum = copy.deepcopy(self.layers)
+        self.layers_asylum = copy.deepcopy(self.layers)
         self.k0_asylum = self.k0
 
     def load_scheme(self):
         """Rescuing scheme parametrs."""
-        self.layers = copy.deepcopy(self.wl_asylum)
+        self.layers = copy.deepcopy(self.layers_asylum)
         self.k0 = self.k0_asylum
 
     # -----------------------------------------------------------------------
@@ -634,9 +634,11 @@ class ExperimentSPR:
     curve_angles_range = [50,70]
 
     def pointSPR(self):
-        theta_min = minimize_scalar(self.R_deg, bounds=self.curve_angles_range, method='Bounded')
-        Rw_min = np.abs(self.R_deg(np.real(theta_min.x)))**2
-        return Rw_min, np.real(theta_min.x)
+        # print(self.curve_angles_range)
+        theta_min = minimize_scalar(lambda x: np.abs(self.R_deg(x))**2,
+                    bounds=self.curve_angles_range, method='Bounded')
+        Rw_min = np.abs(self.R_deg(theta_min.x))**2
+        return Rw_min, theta_min.x
         
         
         
